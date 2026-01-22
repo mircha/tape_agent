@@ -93,19 +93,7 @@ fi
 # echo "==> Detect: SCSI tape drives + changers (lsscsi)"
 # lsscsi -g || true
 
-echo
-echo "==> Detect: filter likely tape/changer lines"
-lsscsi -g | grep -Ei 'tape|medium|changer' || true
 
-echo
-# echo "==> Detect: LTFS devlist"
-# ltfs -o devlist || true
-echo "==> Detect: ltfs version"
-echo "LTFS exists here: $(which ltfs)"
-
-echo
-echo "==> Detect: mtx"
-echo "MTX exists here: $(which mtx)"
 
 echo
 echo "==> Downloading tape agent"
@@ -125,26 +113,36 @@ sudo unset PASSPHRASE
 sudo chmod +x /tape_agent/main
 sudo ln -sf /tape_agent/main /usr/local/bin/tape_agent
 echo "==> Installation complete!"
-sudo /usr/local/bin/tape_agent
+
 
 cat <<'NOTE'
 
 NOTE:
-- Adding the user to the 'tape' group requires a NEW login session.
-  (SSH disconnect/reconnect, or reboot.)
-- This script installs iSCSI tools even if unused. If the library shows up as local SAS/FC,
-  nothing breaks; iSCSI services will simply sit idle.
+- Adding the user to the 'tape' group requires a NEW login session. (SSH disconnect/reconnect, or reboot.)
 
-# iSCSI login
-sudo iscsiadm -m discovery -t sendtargets -p <TARGET_IP>
-sudo iscsiadm -m node -l
+- iSCSI login
+  sudo iscsiadm -m discovery -t sendtargets -p <TARGET_IP>
+  sudo iscsiadm -m node -l
 
 - Next steps (once you know which /dev/nstX is your drive):
-    # Example mount:
-    sudo ltfs -o device=/dev/nst0 /mnt/ltfs
-  Use:
-    ltfs -o devlist
-    lsscsi -g
-  to identify the correct device nodes.
+    # Example mount: sudo ltfs -o device=/dev/nst0 /mnt/ltfs
+  Use: >> ltfs -o devlist OR  lsscsi -g to identify the correct device nodes.
 
 NOTE
+
+echo
+echo "==> Detect: filter likely tape/changer lines"
+lsscsi -g | grep -Ei 'tape|medium|changer' || true
+
+echo
+# echo "==> Detect: LTFS devlist"
+# ltfs -o devlist || true
+echo "==> Detect: ltfs version... LTFS exists here: $(which ltfs)"
+
+
+echo
+echo "==> Detect: mtx... MTX exists here: $(which mtx)"
+
+echo "Tape agent installed... $(which tape_agent)"
+
+sudo /usr/local/bin/tape_agent
