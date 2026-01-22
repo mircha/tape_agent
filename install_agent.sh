@@ -135,6 +135,10 @@ NOTE:
 - This script installs iSCSI tools even if unused. If the library shows up as local SAS/FC,
   nothing breaks; iSCSI services will simply sit idle.
 
+# iSCSI login
+sudo iscsiadm -m discovery -t sendtargets -p <TARGET_IP>
+sudo iscsiadm -m node -l
+
 - Next steps (once you know which /dev/nstX is your drive):
     # Example mount:
     sudo ltfs -o device=/dev/nst0 /mnt/ltfs
