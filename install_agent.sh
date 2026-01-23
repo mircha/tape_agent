@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ###################
-### version 1.1 ###
+### version 1.2 ###
 ###################
 
 set -euo pipefail
@@ -27,6 +27,7 @@ TAPE_AGENT_LOG="tape_agent_install.log"
 : > "${TAPE_AGENT_LOG}"   # truncate log each run (remove if you want append)
 
 echo "==> Base packages (covers local SAS/FC AND iSCSI-attached libraries)"
+echo "==> Installing required packages (see ${DEPS_LOG})"
 sudo DEBIAN_FRONTEND=noninteractive apt-get update -y -qq 1>> "${DEPS_LOG}" 2>&1
 
 if sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq\
@@ -90,9 +91,10 @@ sudo mkdir -p "${MOUNTPOINT}"
 sudo chown "${INSTALL_USER}:${INSTALL_USER}" "${MOUNTPOINT}"
 
 # Build and install LTFS from source
+echo
+echo "==> Build + install LTFS from source (portable across environments)"
 if (
-    echo "==> Build + install LTFS from source (portable across environments)"
-
+    
   if [ -f "${LTFS_TARBALL}" ]; then
     echo "==> Found LTFS tarball: ${LTFS_TARBALL}"
     echo "==> Extracting to: ${LTFS_DIR}"
@@ -141,11 +143,11 @@ fi
 
 # Download and install tape agent
 echo
-echo "==> Downloading tape agent"
+echo "==> Installing tape agent"
 
 if (
-  echo "==> Installing tape agent"
-
+  
+  echo "==> Downloading tape agent"
   mkdir -p /tape_agent
 
   if [ -f "${TAPE_AGENT_TAR}" ]; then
@@ -163,8 +165,8 @@ if (
     fi
 
     echo "==> Decrypting tape agent"
-    read -r -s -p "Tape Agent passphrase: " PASSPHRASE
-    echo
+    read -r -s -p "Tape Agent passphrase: " PASSPHRASE < /dev/tty
+    echo > /dev/tty
 
     sudo gpg --batch --yes --pinentry-mode loopback --passphrase "${PASSPHRASE}" \
       --decrypt "${TAPE_AGENT_GPG}" | sudo tar -xz -C /tape_agent
