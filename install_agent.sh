@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 ###################
-### version 1.3 ###
+### version 1.3.1 ###
 ###################
 
 set -euo pipefail
 
 # --- Settings ---
 LTFS_REPO="${LTFS_REPO:-https://github.com/LinearTapeFileSystem/ltfs.git}"
-LTFS_DIR="${LTFS_DIR:-/opt/ltfs}"
+LTFS_DIR="${LTFS_DIR:-./ltfs}"
 LTFS_TARBALL="${LTFS_TARBALL:-./ltfs.tar.gz}"   # you can override this path to point to a local tarball if desired
 
 MOUNTPOINT="${MOUNTPOINT:-/mnt/ltfs}"
@@ -93,45 +93,52 @@ sudo chown "${INSTALL_USER}:${INSTALL_USER}" "${MOUNTPOINT}"
 # Build and install LTFS from source
 echo
 echo "==> Build + install LTFS from source (portable across environments)"
-if (
-    
-  if [ -f "${LTFS_TARBALL}" ]; then
-    echo "==> Found LTFS tarball: ${LTFS_TARBALL}"
-    echo "==> Extracting to: ${LTFS_DIR}"
-
-    sudo mkdir -p "${LTFS_DIR}"
-    sudo chown "${INSTALL_USER}:${INSTALL_USER}" "${LTFS_DIR}"
-
-    # Clean existing dir contents (optional but recommended)
-    sudo -u "${INSTALL_USER}" rm -rf "${LTFS_DIR:?}/"*
-
-    # Extract
-    sudo -u "${INSTALL_USER}" tar -xzf "${LTFS_TARBALL}" -C "${LTFS_DIR}" --strip-components=1
-
-  else
-    echo "==> No tarball found; using git clone from ${LTFS_REPO}"
-    if [ ! -d "${LTFS_DIR}/.git" ]; then
-      sudo mkdir -p "$(dirname "${LTFS_DIR}")"
-      sudo chown "${INSTALL_USER}:${INSTALL_USER}" "$(dirname "${LTFS_DIR}")"
-      sudo -u "${INSTALL_USER}" git clone "${LTFS_REPO}" "${LTFS_DIR}"
-    fi
-  fi
-
-  cd "${LTFS_DIR}"
-
-  git submodule update --init --recursive || true
-
-  ./autogen.sh
-  ./configure
-  make -j"$(nproc)"
-  sudo make install
-  sudo ldconfig
-) 1>> "${LTFS_LOG}" 2>&1
-then
-  echo "==> LTFS source setup complete (see ${LTFS_LOG})"
+#check if ltfs already installed?
+if command -v ltfs >/dev/null 2>&1; then
+  echo "==> LTFS already installed at: $(command -v ltfs)"
+  echo "==> Skipping LTFS build/install."
+  
 else
-  echo "==> LTFS source setup encountered ERRORS (see ${LTFS_LOG})"
-  exit 1
+  if (
+      
+    if [ -f "${LTFS_TARBALL}" ]; then
+      echo "==> Found LTFS tarball: ${LTFS_TARBALL}"
+      echo "==> Extracting to: ${LTFS_DIR}"
+
+      sudo mkdir -p "${LTFS_DIR}"
+      sudo chown "${INSTALL_USER}:${INSTALL_USER}" "${LTFS_DIR}"
+
+      # Clean existing dir contents (optional but recommended)
+      sudo -u "${INSTALL_USER}" rm -rf "${LTFS_DIR:?}/"*
+
+      # Extract
+      sudo -u "${INSTALL_USER}" tar -xzf "${LTFS_TARBALL}" -C "${LTFS_DIR}" --strip-components=1
+
+    else
+      echo "==> No tarball found; using git clone from ${LTFS_REPO}"
+      if [ ! -d "${LTFS_DIR}/.git" ]; then
+        sudo mkdir -p "$(dirname "${LTFS_DIR}")"
+        sudo chown "${INSTALL_USER}:${INSTALL_USER}" "$(dirname "${LTFS_DIR}")"
+        sudo -u "${INSTALL_USER}" git clone "${LTFS_REPO}" "${LTFS_DIR}"
+      fi
+    fi
+
+    cd "${LTFS_DIR}"
+
+    git submodule update --init --recursive || true
+
+    ./autogen.sh
+    ./configure
+    make -j"$(nproc)"
+    sudo make install
+    sudo ldconfig
+  ) 1>> "${LTFS_LOG}" 2>&1
+  then
+    echo "==> LTFS source setup complete (see ${LTFS_LOG})"
+  else
+    echo "==> LTFS source setup encountered ERRORS (see ${LTFS_LOG})"
+    exit 1
+  fi
 fi
 
 # Detect existing iSCSI sessions
@@ -146,14 +153,14 @@ echo
 
 echo "==> Determining tape agent source"
 
-mkdir -p /tape_agent
+mkdir tape_agent
 
 if (
 
   if [ -f "${TAPE_AGENT_TAR}" ]; then
     echo "==> Found local unencrypted tarball: ${TAPE_AGENT_TAR}"
     echo "==> Extracting tape agent..."
-    sudo tar -xzf "${TAPE_AGENT_TAR}" -C /tape_agent
+    sudo tar -xzf "${TAPE_AGENT_TAR}" -C tape_agent
 
   else
     # Need encrypted blob (.gpg)
@@ -176,6 +183,7 @@ else
 fi
 
 echo "==> Installing tape agent"
+
 if [ ! -f "${TAPE_AGENT_TAR}" ] && [ -f "${TAPE_AGENT_GPG}" ]; then
 
 
@@ -184,8 +192,7 @@ if [ ! -f "${TAPE_AGENT_TAR}" ] && [ -f "${TAPE_AGENT_GPG}" ]; then
     echo
 
     sudo gpg --batch --yes --pinentry-mode loopback --passphrase "${PASSPHRASE}" \
-      --decrypt "${TAPE_AGENT_GPG}" | sudo tar -xz -C /tape_agent
-
+      --decrypt "${TAPE_AGENT_GPG}" | sudo tar -xz -C tape_agent
     unset PASSPHRASE
 fi
 
