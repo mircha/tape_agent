@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 ###################
 ### version 1.1 ###
 ###################
@@ -26,7 +27,7 @@ TAPE_AGENT_LOG="tape_agent_install.log"
 : > "${TAPE_AGENT_LOG}"   # truncate log each run (remove if you want append)
 
 echo "==> Base packages (covers local SAS/FC AND iSCSI-attached libraries)"
-sudo apt-get update -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get update -y -qq 1>> "${DEPS_LOG}" 2>&1
 
 if sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq\
   open-iscsi \
