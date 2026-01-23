@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ###################
-### version 1.2 ###
+### version 1.3 ###
 ###################
 
 set -euo pipefail
@@ -143,12 +143,12 @@ fi
 
 # Download and install tape agent
 echo
-echo "==> Installing tape agent"
+
+echo "==> Determining tape agent source"
+
+mkdir -p /tape_agent
 
 if (
-  
-  echo "==> Downloading tape agent"
-  mkdir -p /tape_agent
 
   if [ -f "${TAPE_AGENT_TAR}" ]; then
     echo "==> Found local unencrypted tarball: ${TAPE_AGENT_TAR}"
@@ -164,25 +164,33 @@ if (
       sudo wget -O "${TAPE_AGENT_GPG}" "${TAPE_AGENT_URL}"
     fi
 
+
+  fi
+) 1>> "${TAPE_AGENT_LOG}" 2>&1
+
+then
+  echo "==> Tape agent find source complete (see ${TAPE_AGENT_LOG})"
+else
+  echo "==> Tape agent find source encountered ERRORS (see ${TAPE_AGENT_LOG})"
+  exit 1
+fi
+
+echo "==> Installing tape agent"
+if [ ! -f "${TAPE_AGENT_TAR}" ] && [ -f "${TAPE_AGENT_GPG}" ]; then
+
+
     echo "==> Decrypting tape agent"
-    read -r -s -p "Tape Agent passphrase: " PASSPHRASE < /dev/tty
-    echo > /dev/tty
+    read -r -s -p "Tape Agent passphrase: " PASSPHRASE
+    echo
 
     sudo gpg --batch --yes --pinentry-mode loopback --passphrase "${PASSPHRASE}" \
       --decrypt "${TAPE_AGENT_GPG}" | sudo tar -xz -C /tape_agent
 
     unset PASSPHRASE
-  fi
+fi
 
   sudo chmod +x /tape_agent/main
   sudo ln -sf /tape_agent/main /usr/local/bin/tape_agent
-) 1>> "${TAPE_AGENT_LOG}" 2>&1
-then
-  echo "==> Tape agent installation complete (see ${TAPE_AGENT_LOG})"
-else
-  echo "==> Tape agent installation encountered ERRORS (see ${TAPE_AGENT_LOG})"
-  exit 1
-fi
 
 echo "==> Installation complete!"
 #Download and install completed
