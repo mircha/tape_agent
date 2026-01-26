@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-###################
+#####################
 ### version 1.3.1 ###
-###################
+#####################
 
 set -euo pipefail
 
@@ -153,7 +153,7 @@ echo
 
 echo "==> Determining tape agent source"
 
-mkdir tape_agent
+mkdir -p tape_agent
 
 if (
 
