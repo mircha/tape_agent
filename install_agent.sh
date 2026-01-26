@@ -196,8 +196,9 @@ if [ ! -f "${TAPE_AGENT_TAR}" ] && [ -f "${TAPE_AGENT_GPG}" ]; then
     unset PASSPHRASE
 fi
 
-  sudo chmod +x /tape_agent/main
-  sudo ln -sf /tape_agent/main /usr/local/bin/tape_agent
+  sudo chmod +x ./tape_agent/main
+  #sudo ln -sf ./tape_agent/main /usr/local/bin/tape_agent
+  sudo install -m 755 "$(pwd)/tape_agent/main" /usr/local/bin/tape_agent
 
 echo "==> Installation complete!"
 #Download and install completed
